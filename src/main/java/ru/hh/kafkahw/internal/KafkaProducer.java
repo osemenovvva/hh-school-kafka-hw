@@ -1,4 +1,4 @@
-package ru.hh.kafkahw;
+package ru.hh.kafkahw.internal;
 
 import java.util.Random;
 import org.slf4j.Logger;
