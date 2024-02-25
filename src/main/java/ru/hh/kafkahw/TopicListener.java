@@ -19,24 +19,36 @@ public class TopicListener {
     this.service = service;
   }
 
+  // При падении обработчика в @KafkaListener, сообщение все равно обрабатывается повторно.
+  // Чтобы этого избежать, явно ловим ошибку и вызываем acknowledge().
   @KafkaListener(topics = "topic1", groupId = "group1")
   public void atMostOnce(ConsumerRecord<?, String> consumerRecord, Acknowledgment ack) {
-    LOGGER.info("Try handle message, topic {}, payload {}", consumerRecord.topic(), consumerRecord.value());
-    service.handle("topic1", consumerRecord.value());
-    ack.acknowledge();
+    try {
+      LOGGER.info("Try handle message, topic {}, payload {}", consumerRecord.topic(), consumerRecord.value());
+      service.handle("topic1", consumerRecord.value());
+    }
+    catch (RuntimeException e) {
+      LOGGER.error("Error while handling message", e);
+    }
+    finally {
+      ack.acknowledge();
+    }
   }
 
   @KafkaListener(topics = "topic2", groupId = "group2")
   public void atLeastOnce(ConsumerRecord<?, String> consumerRecord, Acknowledgment ack) {
     LOGGER.info("Try handle message, topic {}, payload {}", consumerRecord.topic(), consumerRecord.value());
-    ack.acknowledge();
     service.handle("topic2", consumerRecord.value());
+    ack.acknowledge();
   }
 
+  //Обрабатываем сообщение, только если раньше у него не было успешных обработок.
   @KafkaListener(topics = "topic3", groupId = "group3")
   public void exactlyOnce(ConsumerRecord<?, String> consumerRecord, Acknowledgment ack) {
     LOGGER.info("Try handle message, topic {}, payload {}", consumerRecord.topic(), consumerRecord.value());
-    service.handle("topic3", consumerRecord.value());
+    if (service.count(consumerRecord.topic(), consumerRecord.value()) == 0) {
+      service.handle("topic3", consumerRecord.value());
+    };
     ack.acknowledge();
   }
 }
