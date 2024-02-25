@@ -1,17 +1,9 @@
 package ru.hh.kafkahw;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,17 +12,23 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
-import org.springframework.kafka.core.ConsumerFactory;
-import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
-import org.springframework.kafka.core.DefaultKafkaProducerFactory;
-import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.kafka.core.ProducerFactory;
+import org.springframework.kafka.core.*;
 import org.springframework.kafka.listener.ContainerProperties;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.testcontainers.containers.KafkaContainer;
 import org.testcontainers.utility.DockerImageName;
 import ru.hh.kafkahw.internal.Service;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 @RunWith(SpringRunner.class)
 @Import(KafkaTest.KafkaTestConfiguration.class)
@@ -61,7 +59,7 @@ class KafkaTest {
     Set<String> messages = IntStream.range(1, 101)
         .mapToObj(i -> UUID.randomUUID().toString())
         .collect(Collectors.toSet());
-    messages.forEach(message -> sender.doSomething("topic2", message));
+    messages.forEach(message -> sender.sendAtLeastOnce("topic2", message));
     Thread.sleep(5000);
     messages.forEach(message -> {
       assertTrue(1 <= service.count("topic2", message));
@@ -73,7 +71,7 @@ class KafkaTest {
     Set<String> messages = IntStream.range(1, 101)
         .mapToObj(i -> UUID.randomUUID().toString())
         .collect(Collectors.toSet());
-    messages.forEach(message -> sender.doSomething("topic3", message));
+    messages.forEach(message -> sender.sendAtLeastOnce("topic3", message));
     Thread.sleep(5000);
     messages.forEach(message -> {
       assertEquals(1, service.count("topic3", message));
